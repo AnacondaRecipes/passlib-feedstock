@@ -1,7 +1,11 @@
 From d5f0cf9311c9f9e42a41788aab16db50a52eadbe Mon Sep 17 00:00:00 2001
 From: Eric Lundby <Eric.Lundby@gmail.com>
 Date: Thu, 13 Nov 2025 17:11:24 -0700
-Subject: [PATCH] dfdfd
+Subject: [PATCH] bcrypt5 compatibility
+
+* Support either _bcrypt.__about__.__version__ or _bcrypt.__version__
+* Truncate the secret to 72 bytes for compatibility with bcrypt5
+* Fixes two tests. 
 
 ---
  passlib/handlers/bcrypt.py            | 6 +++---
@@ -53,7 +57,6 @@ index 64fc8bf..6db2c8c 100644
              except ValueError:
                  raise ValueError("bcrypt rejected hash: %r (secret=%r)" % (hash, secret))
          return check_bcrypt
-
 diff --git a/passlib/tests/test_utils.py b/passlib/tests/test_utils.py
 index 59ba160..b2d86c1 100644
 --- a/passlib/tests/test_utils.py
@@ -67,3 +70,29 @@ index 59ba160..b2d86c1 100644
          def test_func(*args):
              """test docstring"""
              return args
+diff --git a/passlib/tests/utils.py b/passlib/tests/utils.py
+index 79a9f9f..8e8a96b 100644
+--- a/passlib/tests/utils.py
++++ b/passlib/tests/utils.py
+@@ -3360,6 +3360,10 @@ class OsCryptMixin(HandlerCase):
+         if hasattr(self.handler, "orig_prefix"):
+             raise self.skipTest("not applicable to wrappers")
+ 
++        # Python 3.13+ removed the crypt module entirely
++        if sys.version_info >= (3, 13):
++            raise self.skipTest("crypt module removed in Python 3.13+")
++
+         # look for first entry that matches current system
+         # XXX: append "/" + platform.release() to string?
+         # XXX: probably should rework to support rows being dicts w/ "minver" / "maxver" keys,
+@@ -3403,6 +3407,10 @@ class OsCryptMixin(HandlerCase):
+         if self.using_patched_crypt or hasattr(handler, "wrapped"):
+             return None
+ 
++        # Python 3.13+ removed the crypt module
++        if sys.version_info >= (3, 13):
++            return None
++
+         # create a wrapper for fuzzy verified to use
+         from crypt import crypt
+         from passlib.utils import _safe_crypt_lock
