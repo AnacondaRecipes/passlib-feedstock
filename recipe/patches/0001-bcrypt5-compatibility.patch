@@ -1,0 +1,69 @@
+From d5f0cf9311c9f9e42a41788aab16db50a52eadbe Mon Sep 17 00:00:00 2001
+From: Eric Lundby <Eric.Lundby@gmail.com>
+Date: Thu, 13 Nov 2025 17:11:24 -0700
+Subject: [PATCH] dfdfd
+
+---
+ passlib/handlers/bcrypt.py            | 6 +++---
+ passlib/tests/test_handlers_bcrypt.py | 2 +-
+ passlib/tests/test_utils.py           | 2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/passlib/handlers/bcrypt.py b/passlib/handlers/bcrypt.py
+index b83b110..df7faed 100644
+--- a/passlib/handlers/bcrypt.py
++++ b/passlib/handlers/bcrypt.py
+@@ -617,7 +617,7 @@ class _BcryptBackend(_BcryptCommon):
+         except ImportError: # pragma: no cover
+             return False
+         try:
+-            version = _bcrypt.__about__.__version__
++            version = getattr(getattr(_bcrypt, '__about__', None), '__version__', None) or getattr(_bcrypt, '__version__', '<unknown>')
+         except:
+             log.warning("(trapped) error reading bcrypt version", exc_info=True)
+             version = '<unknown>'
+@@ -652,7 +652,7 @@ class _BcryptBackend(_BcryptCommon):
+         config = self._get_config(ident)
+         if isinstance(config, unicode):
+             config = config.encode("ascii")
+-        hash = _bcrypt.hashpw(secret, config)
++        hash = _bcrypt.hashpw(secret[:72], config)
+         assert isinstance(hash, bytes)
+         if not hash.startswith(config) or len(hash) != len(config)+31:
+             raise uh.exc.CryptBackendError(self, config, hash, source="`bcrypt` package")
+@@ -759,7 +759,7 @@ class _PyBcryptBackend(_BcryptCommon):
+         #        hash encoded as ascii bytes, returns ascii unicode.
+         secret, ident = self._prepare_digest_args(secret)
+         config = self._get_config(ident)
+-        hash = _pybcrypt.hashpw(secret, config)
++        hash = _pybcrypt.hashpw(secret[:72], config)
+         if not hash.startswith(config) or len(hash) != len(config) + 31:
+             raise uh.exc.CryptBackendError(self, config, hash, source="pybcrypt library")
+         return str_to_uascii(hash[-31:])
+diff --git a/passlib/tests/test_handlers_bcrypt.py b/passlib/tests/test_handlers_bcrypt.py
+index 64fc8bf..6db2c8c 100644
+--- a/passlib/tests/test_handlers_bcrypt.py
++++ b/passlib/tests/test_handlers_bcrypt.py
+@@ -233,7 +233,7 @@ class _bcrypt_test(HandlerCase):
+                 hash = IDENT_2B + hash[4:]
+             hash = to_bytes(hash)
+             try:
+-                return bcrypt.hashpw(secret, hash) == hash
++                return bcrypt.hashpw(secret[:72], hash) == hash
+             except ValueError:
+                 raise ValueError("bcrypt rejected hash: %r (secret=%r)" % (hash, secret))
+         return check_bcrypt
+
+diff --git a/passlib/tests/test_utils.py b/passlib/tests/test_utils.py
+index 59ba160..b2d86c1 100644
+--- a/passlib/tests/test_utils.py
++++ b/passlib/tests/test_utils.py
+@@ -50,7 +50,7 @@ class MiscTest(TestCase):
+         from passlib.utils.decor import deprecated_function
+         # NOTE: not comprehensive, just tests the basic behavior
+ 
+-        @deprecated_function(deprecated="1.6", removed="1.8")
++        @deprecated_function(deprecated="1.6", removed="1.8", func_module="passlib.tests.test_utils")
+         def test_func(*args):
+             """test docstring"""
+             return args
