@@ -44,7 +44,8 @@ test:
   commands:
     - pip check
     # test_dummy_verify passes locally but fails on CI with: AssertionError: 0.08806849992834032 != 0.05 within 0.010000000000000002 delta (0.03806849992834031 difference)
-    - python -m pytest passlib/tests -v --deselect passlib/tests/test_context.py::CryptContextTest::test_dummy_verify
+    # test_82_crypt_support (py<3.13): CI Linux containers lack libcrypt support, while python relies on the sysroot.
+    - python -m pytest passlib/tests -v -k "not (test_dummy_verify or test_82_crypt_support)"
 
 about:
   home: https://foss.heptapod.net/python-libs/passlib
